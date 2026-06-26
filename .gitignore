@@ -1,0 +1,19 @@
+# Build artifacts
+benchmark/build/
+
+# Benchmark results (keep the gitkeep placeholder)
+results/*.json
+results/*.csv
+
+# Python
+__pycache__/
+*.pyc
+server/.venv/
+server/results/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+*.swp

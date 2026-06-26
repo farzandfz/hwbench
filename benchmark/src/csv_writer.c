@@ -1,0 +1,99 @@
+#define _POSIX_C_SOURCE 200809L
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#include "benchmark.h"
+#include "system_info.h"
+#include "modules.h"
+
+static bool file_exists(const char *path) {
+    struct stat st;
+    return stat(path, &st) == 0;
+}
+
+void write_csv(const char *path,
+               const SystemInfo        *sys,
+               const CpuSingleResult   *cs,
+               const CpuMultiResult    *cm,
+               const MemoryResult      *mem,
+               const StorageResult     *stor,
+               const CompressionResult *comp,
+               const HashingResult     *hash,
+               const FloatResult       *fp,
+               const ThreadBenchResult *thr,
+               const FsMetaResult      *fsmeta,
+               const PythonResult      *py) {
+    bool need_header = !file_exists(path);
+    FILE *f = fopen(path, "a");
+    if (!f) { fprintf(stderr, "Cannot open CSV %s\n", path); return; }
+
+    if (need_header) {
+        fprintf(f,
+            "timestamp,device_name,hostname,os,arch,cpu_model,"
+            "cpu_physical_cores,cpu_logical_cores,ram_total_mb,"
+            /* cpu */
+            "cpu_single_ips,cpu_multi_ips,cpu_scaling,cpu_efficiency,"
+            /* memory */
+            "mem_write_gbps,mem_read_gbps,mem_memcpy_gbps,mem_latency_ns,"
+            /* storage */
+            "stor_seq_write_mbps,stor_seq_read_mbps,"
+            "stor_rand4k_write_iops,stor_rand4k_read_iops,stor_file_create_ps,"
+            /* compression */
+            "comp_compress_mbps,comp_decompress_mbps,comp_ratio,"
+            /* hashing */
+            "hash_hashes_ps,hash_mbps,"
+            /* float */
+            "fp_gflops,fp_ips,"
+            /* thread */
+            "thr_create_us,thr_mutex_ops_ps,thr_condvar_ps,"
+            /* fs_meta */
+            "fsmeta_create_ps,fsmeta_stat_ps,fsmeta_delete_ps,"
+            /* python */
+            "py_version,py_startup_ms,py_sc_ips,py_mc_ips,py_mc_scaling\n");
+    }
+
+    fprintf(f,
+        "%s,%s,%s,%s %s,%s,%s,"
+        "%d,%d,%ld,"
+        "%.3f,%.3f,%.3f,%.2f,"
+        "%.4f,%.4f,%.4f,%.2f,"
+        "%.2f,%.2f,%.1f,%.1f,%.1f,"
+        "%.2f,%.2f,%.4f,"
+        "%.3f,%.3f,"
+        "%.3f,%.3f,"
+        "%.3f,%.0f,%.0f,"
+        "%.0f,%.0f,%.0f,"
+        "%s,%.2f,%.0f,%.0f,%.3f\n",
+        sys->timestamp, sys->device_name, sys->hostname,
+        sys->os_name, sys->os_version, sys->architecture, sys->cpu_model,
+        sys->cpu_physical_cores, sys->cpu_logical_cores, sys->ram_total_mb,
+        cs->iterations_per_sec / 1e6,
+        cm->iterations_per_sec / 1e6,
+        cm->scaling_factor,
+        cm->efficiency_percent,
+        mem->sequential_write_gbps, mem->sequential_read_gbps,
+        mem->memcpy_gbps, mem->latency_ns,
+        stor->skipped ? 0.0 : stor->sequential_write_mbps,
+        stor->skipped ? 0.0 : stor->sequential_read_mbps,
+        stor->skipped ? 0.0 : stor->random_4k_write_iops,
+        stor->skipped ? 0.0 : stor->random_4k_read_iops,
+        stor->skipped ? 0.0 : stor->file_create_per_sec,
+        comp->skipped ? 0.0 : comp->compress_mbps,
+        comp->skipped ? 0.0 : comp->decompress_mbps,
+        comp->skipped ? 0.0 : comp->compression_ratio,
+        hash->hashes_per_sec, hash->throughput_mbps,
+        fp->flop_estimate_per_sec / 1e9, fp->iterations_per_sec / 1e6,
+        thr->thread_create_latency_us,
+        thr->mutex_ops_per_sec,
+        thr->condvar_msgs_per_sec,
+        fsmeta->create_per_sec, fsmeta->stat_per_sec, fsmeta->delete_per_sec,
+        py->skipped ? "n/a" : py->python_version,
+        py->skipped ? 0.0 : py->startup_time_ms,
+        py->skipped ? 0.0 : py->single_core_ips,
+        py->skipped ? 0.0 : py->multi_core_ips,
+        py->skipped ? 0.0 : py->multi_core_scaling);
+
+    fclose(f);
+}
