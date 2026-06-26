@@ -102,7 +102,7 @@ static void sha256(const uint8_t *data, size_t len, uint8_t digest[32]) {
     }
 }
 
-#define HASH_BUF_MB 1
+#define HASH_BUF_MB 16
 
 HashingResult bench_hashing(const BenchConfig *cfg) {
     size_t buf_bytes = (size_t)HASH_BUF_MB * 1024 * 1024;

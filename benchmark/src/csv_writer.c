@@ -54,18 +54,12 @@ void write_csv(const char *path,
             "py_version,py_startup_ms,py_sc_ips,py_mc_ips,py_mc_scaling\n");
     }
 
+    /* system + CPU + memory */
     fprintf(f,
         "%s,%s,%s,%s %s,%s,%s,"
         "%d,%d,%ld,"
         "%.3f,%.3f,%.3f,%.2f,"
-        "%.4f,%.4f,%.4f,%.2f,"
-        "%.2f,%.2f,%.1f,%.1f,%.1f,"
-        "%.2f,%.2f,%.4f,"
-        "%.3f,%.3f,"
-        "%.3f,%.3f,"
-        "%.3f,%.0f,%.0f,"
-        "%.0f,%.0f,%.0f,"
-        "%s,%.2f,%.0f,%.0f,%.3f\n",
+        "%.4f,%.4f,%.4f,%.2f,",
         sys->timestamp, sys->device_name, sys->hostname,
         sys->os_name, sys->os_version, sys->architecture, sys->cpu_model,
         sys->cpu_physical_cores, sys->cpu_logical_cores, sys->ram_total_mb,
@@ -74,12 +68,28 @@ void write_csv(const char *path,
         cm->scaling_factor,
         cm->efficiency_percent,
         mem->sequential_write_gbps, mem->sequential_read_gbps,
-        mem->memcpy_gbps, mem->latency_ns,
-        stor->skipped ? 0.0 : stor->sequential_write_mbps,
-        stor->skipped ? 0.0 : stor->sequential_read_mbps,
-        stor->skipped ? 0.0 : stor->random_4k_write_iops,
-        stor->skipped ? 0.0 : stor->random_4k_read_iops,
-        stor->skipped ? 0.0 : stor->file_create_per_sec,
+        mem->memcpy_gbps, mem->latency_ns);
+
+    /* storage — sequential fields always written; random 4K empty when tmpfs */
+    if (stor->skipped) {
+        fprintf(f, ",,,,,"  /* seq_write, seq_read, rand4k_write, rand4k_read, file_create */);
+    } else {
+        fprintf(f, "%.2f,%.2f,", stor->sequential_write_mbps, stor->sequential_read_mbps);
+        if (stor->is_tmpfs)
+            fprintf(f, ",,"); /* null — tmpfs random 4K reflects RAM, not disk */
+        else
+            fprintf(f, "%.1f,%.1f,", stor->random_4k_write_iops, stor->random_4k_read_iops);
+        fprintf(f, "%.1f,", stor->file_create_per_sec);
+    }
+
+    /* compression + hashing + fp + threads + fsmeta + python */
+    fprintf(f,
+        "%.2f,%.2f,%.4f,"
+        "%.3f,%.3f,"
+        "%.3f,%.3f,"
+        "%.3f,%.0f,%.0f,"
+        "%.0f,%.0f,%.0f,"
+        "%s,%.2f,%.0f,%.0f,%.3f\n",
         comp->skipped ? 0.0 : comp->compress_mbps,
         comp->skipped ? 0.0 : comp->decompress_mbps,
         comp->skipped ? 0.0 : comp->compression_ratio,

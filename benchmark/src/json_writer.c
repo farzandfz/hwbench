@@ -168,8 +168,14 @@ void write_json(const char *path,
     } else {
         json_dbl  (&sb, "sequential_write_mbps",  stor->sequential_write_mbps); COMMA(&sb);
         json_dbl  (&sb, "sequential_read_mbps",   stor->sequential_read_mbps);  COMMA(&sb);
-        json_dbl  (&sb, "random_4k_write_iops",   stor->random_4k_write_iops);  COMMA(&sb);
-        json_dbl  (&sb, "random_4k_read_iops",    stor->random_4k_read_iops);   COMMA(&sb);
+        /* random 4K on tmpfs measures RAM, not disk — write null to avoid misleading comparisons */
+        if (stor->is_tmpfs) {
+            sb_printf(&sb, "    \"random_4k_write_iops\": null"); COMMA(&sb);
+            sb_printf(&sb, "    \"random_4k_read_iops\": null");  COMMA(&sb);
+        } else {
+            json_dbl  (&sb, "random_4k_write_iops", stor->random_4k_write_iops); COMMA(&sb);
+            json_dbl  (&sb, "random_4k_read_iops",  stor->random_4k_read_iops);  COMMA(&sb);
+        }
         json_dbl  (&sb, "file_create_per_sec",    stor->file_create_per_sec);   COMMA(&sb);
         json_str  (&sb, "storage_path",           stor->storage_path);          COMMA(&sb);
         json_bool (&sb, "is_tmpfs",               stor->is_tmpfs);

@@ -166,7 +166,8 @@ void collect_system_info(SystemInfo *info, const char *device_name,
 #else
     if (!cpuinfo_val("model name", info->cpu_model, sizeof(info->cpu_model)))
         if (!cpuinfo_val("Processor", info->cpu_model, sizeof(info->cpu_model)))
-            cpuinfo_val("Model name", info->cpu_model, sizeof(info->cpu_model));
+            if (!cpuinfo_val("Model name", info->cpu_model, sizeof(info->cpu_model)))
+                cpuinfo_val("Model\t", info->cpu_model, sizeof(info->cpu_model)); /* Pi: "Model : Raspberry Pi 3..." */
 
     char freq_str[64] = "";
     if (cpuinfo_val("cpu MHz", freq_str, sizeof(freq_str)))
