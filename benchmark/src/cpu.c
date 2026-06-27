@@ -35,10 +35,9 @@ static uint64_t cpu_workload(int duration_sec) {
             b += 1442695040888963407ULL;
             c ^= (c >> 33);
             d *= 2685821657736338717ULL;
+            __asm__ volatile("" : "+r"(a), "+r"(b), "+r"(c), "+r"(d) :: "memory");
         }
         iters += 100000;
-        COMPILER_BARRIER(a);
-        COMPILER_BARRIER(b);
         elapsed = elapsed_sec(&ts_start);
     }
     return iters;
@@ -50,7 +49,7 @@ CpuSingleResult bench_cpu_single(const BenchConfig *cfg) {
     struct timespec ts_start;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-    uint64_t iters = cpu_workload(cfg->duration_sec);
+    uint64_t iters = cpu_workload(cfg->cpu_duration_sec);
     double dur = elapsed_sec(&ts_start);
 
     CpuSingleResult r;
@@ -82,7 +81,7 @@ CpuMultiResult bench_cpu_multi(const BenchConfig *cfg, int num_cores,
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
     for (int i = 0; i < num_cores; i++) {
-        args[i].duration_sec  = cfg->duration_sec;
+        args[i].duration_sec  = cfg->cpu_duration_sec;
         args[i].result_iters  = 0;
         pthread_create(&threads[i], NULL, thread_fn, &args[i]);
     }

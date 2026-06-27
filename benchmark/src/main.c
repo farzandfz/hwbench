@@ -281,6 +281,7 @@ static void usage(const char *prog) {
         "Usage: %s <device_name> [options]\n"
         "Options:\n"
         "  --duration N        Seconds per module (default %d)\n"
+        "  --cpu-duration N    Seconds for CPU single/multi modules (default 30)\n"
         "  --storage-path PATH Override storage benchmark path (default /tmp)\n"
         "  --csv               Also write CSV row\n"
         "  --skip MODULE       Skip module (cpu_single,cpu_multi,memory,storage,\n"
@@ -293,7 +294,8 @@ static void usage(const char *prog) {
 int main(int argc, char **argv) {
     /* ---- defaults ---- */
     memset(&g_cfg, 0, sizeof(g_cfg));
-    g_cfg.duration_sec   = DEFAULT_DURATION_SEC;
+    g_cfg.duration_sec     = DEFAULT_DURATION_SEC;
+    g_cfg.cpu_duration_sec = 30;
     g_cfg.storage_path   = "/tmp";
     g_cfg.csv_output     = false;
     g_cfg.no_color       = false;
@@ -314,6 +316,9 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[i], "--duration") == 0 && i+1 < argc) {
             g_cfg.duration_sec = atoi(argv[++i]);
             if (g_cfg.duration_sec < 1) g_cfg.duration_sec = 1;
+        } else if (strcmp(argv[i], "--cpu-duration") == 0 && i+1 < argc) {
+            g_cfg.cpu_duration_sec = atoi(argv[++i]);
+            if (g_cfg.cpu_duration_sec < 1) g_cfg.cpu_duration_sec = 1;
         } else if (strcmp(argv[i], "--storage-path") == 0 && i+1 < argc) {
             g_cfg.storage_path = argv[++i];
         } else if (strcmp(argv[i], "--csv") == 0) {
@@ -374,8 +379,8 @@ int main(int argc, char **argv) {
 
     /* ---- module 1: CPU single ---- */
     if (!skip[0]) {
-        print_module_header(idx, total, "CPU Single-Core", g_cfg.duration_sec, nc);
-        SpinnerArg sarg = {"CPU Single", false, g_cfg.duration_sec};
+        print_module_header(idx, total, "CPU Single-Core", g_cfg.cpu_duration_sec, nc);
+        SpinnerArg sarg = {"CPU Single", false, g_cfg.cpu_duration_sec};
         pthread_t stid;
         pthread_create(&stid, NULL, spinner_fn, &sarg);
         g_cs = bench_cpu_single(&g_cfg);
@@ -388,8 +393,8 @@ int main(int argc, char **argv) {
 
     /* ---- module 2: CPU multi ---- */
     if (!skip[1]) {
-        print_module_header(idx, total, "CPU Multi-Core", g_cfg.duration_sec, nc);
-        SpinnerArg sarg = {"CPU Multi", false, g_cfg.duration_sec};
+        print_module_header(idx, total, "CPU Multi-Core", g_cfg.cpu_duration_sec, nc);
+        SpinnerArg sarg = {"CPU Multi", false, g_cfg.cpu_duration_sec};
         pthread_t stid;
         pthread_create(&stid, NULL, spinner_fn, &sarg);
         g_cm = bench_cpu_multi(&g_cfg, g_sys.cpu_logical_cores,

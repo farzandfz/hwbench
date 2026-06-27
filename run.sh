@@ -203,10 +203,15 @@ ok "Device name: $DEVICE_NAME"
 
 # ---- extra flags from user ---------------------------------------------------
 EXTRA_FLAGS=""
-printf "\nRun with default 10s per module? [Y/n]: "
+printf "\nRun with defaults (CPU: 30s, other modules: 10s)? [Y/n]: "
 read -r ans_dur
 if [[ "$ans_dur" =~ ^[Nn]$ ]]; then
-    printf "Seconds per module (e.g. 5): "
+    printf "Seconds for CPU modules (default 30): "
+    read -r CPU_DUR
+    CPU_DUR=$(echo "$CPU_DUR" | tr -cd '0-9')
+    [ -n "$CPU_DUR" ] && EXTRA_FLAGS="$EXTRA_FLAGS --cpu-duration $CPU_DUR"
+
+    printf "Seconds for other modules (default 10): "
     read -r DUR
     DUR=$(echo "$DUR" | tr -cd '0-9')
     [ -n "$DUR" ] && EXTRA_FLAGS="$EXTRA_FLAGS --duration $DUR"

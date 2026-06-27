@@ -26,6 +26,7 @@ void fmt_commas(char *buf, size_t bufsz, uint64_t val);
 /* Benchmark configuration passed to all modules */
 typedef struct {
     int duration_sec;
+    int cpu_duration_sec;   /* separate duration for CPU modules; defaults to 30 */
     const char *storage_path;
     bool csv_output;
     bool no_color;
