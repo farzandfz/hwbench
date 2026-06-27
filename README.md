@@ -93,21 +93,30 @@ Appended to `results/benchmark_results.csv`. Headers written automatically on fi
 
 ---
 
-## Relay Server
+## Relay Server & Leaderboard
 
-The `server/` directory contains a FastAPI server that accepts `POST /submit` and appends a row to a Google Sheet leaderboard. No Drive quota issues — service accounts can write to Sheets freely.
+The `server/` directory contains a FastAPI server that accepts `POST /submit` and appends a row to a Google Sheet leaderboard. Each device that runs the benchmark and answers `y` to the upload prompt gets a row.
 
-After deploying, update the `RELAY_URL` variable at the top of `run.sh`.
+See [server/README_DEPLOY.md](server/README_DEPLOY.md) for full setup instructions covering Railway, Ubuntu/Linux VPS, and Render.
 
-### Required environment variables
+### Quick setup summary
 
-| Variable | Description |
-|----------|-------------|
-| `GOOGLE_SERVICE_ACCOUNT_JSON_CONTENT` | Full contents of the service account JSON key file (single line) |
-| `GSHEET_ID` | Google Sheet ID (from the URL: `/spreadsheets/d/<ID>/edit`) |
-| `GSHEET_TAB` | Tab name within the sheet (e.g. `hwbench`) |
+1. **Enable Google Sheets API** in Google Cloud Console.
+2. **Create a service account**, download the JSON key, compact it to a single line:
+   ```bash
+   python3 -c "import json; print(json.dumps(json.load(open('key.json'))))"
+   ```
+3. **Create a Google Sheet**, rename the tab (e.g. `hwbench`), share it with the service account email as **Editor**.
+4. **Deploy the server** (Railway recommended — connects to GitHub, auto-deploys on push).
+5. **Set three environment variables** on the server:
 
-The service account email must be shared on the sheet as **Editor**.
+   | Variable | Value |
+   |----------|-------|
+   | `GOOGLE_SERVICE_ACCOUNT_JSON_CONTENT` | Compacted JSON key |
+   | `GSHEET_ID` | ID from the sheet URL |
+   | `GSHEET_TAB` | Tab name (e.g. `hwbench`) |
+
+6. **Update `RELAY_URL`** at the top of `run.sh` with your deployed server URL.
 
 ### Server endpoints
 
@@ -116,20 +125,6 @@ The service account email must be shared on the sheet as **Editor**.
 | `GET`  | `/health` | Health check — shows which env vars are configured |
 | `POST` | `/submit` | Append a benchmark result row to the leaderboard |
 | `GET`  | `/results` | Return all leaderboard rows as JSON |
-
-### Local server test
-
-```bash
-cd server/
-pip install -r requirements.txt
-uvicorn main:app --host 127.0.0.1 --port 8000 --reload
-
-# In another terminal:
-curl http://localhost:8000/health
-curl -X POST http://localhost:8000/submit \
-     -H "Content-Type: application/json" \
-     -d @results/benchmark_results_*.json
-```
 
 ---
 
