@@ -33,8 +33,11 @@ void write_csv(const char *path,
         fprintf(f,
             "timestamp,device_name,hostname,os,arch,cpu_model,"
             "cpu_physical_cores,cpu_logical_cores,ram_total_mb,"
-            /* cpu */
-            "cpu_single_ips,cpu_multi_ips,cpu_scaling,cpu_efficiency,"
+            /* cpu single */
+            "cpu_dep_ips,cpu_thr_ips,cpu_mem_ips,"
+            /* cpu multi */
+            "cpu_dep_ips_multi,cpu_thr_ips_multi,cpu_mem_ips_multi,"
+            "cpu_thr_scaling,cpu_thr_efficiency,"
             /* memory */
             "mem_write_gbps,mem_read_gbps,mem_memcpy_gbps,mem_latency_ns,"
             /* storage */
@@ -54,19 +57,22 @@ void write_csv(const char *path,
             "py_version,py_startup_ms,py_sc_ips,py_mc_ips,py_mc_scaling\n");
     }
 
-    /* system + CPU + memory */
+    /* system + CPU single + CPU multi + memory */
     fprintf(f,
         "%s,%s,%s,%s %s,%s,%s,"
         "%d,%d,%ld,"
-        "%.3f,%.3f,%.3f,%.2f,"
+        "%.3f,%.3f,%.3f,"
+        "%.3f,%.3f,%.3f,%.3f,%.2f,"
         "%.4f,%.4f,%.4f,%.2f,",
         sys->timestamp, sys->device_name, sys->hostname,
         sys->os_name, sys->os_version, sys->architecture, sys->cpu_model,
         sys->cpu_physical_cores, sys->cpu_logical_cores, sys->ram_total_mb,
-        cs->iterations_per_sec / 1e6,
-        cm->iterations_per_sec / 1e6,
-        cm->scaling_factor,
-        cm->efficiency_percent,
+        /* cpu single: dep, thr, mem (millions/sec) */
+        cs->dep_chain_ips / 1e6, cs->indep_throughput_ips / 1e6,
+        cs->memory_bound_ips / 1e6,
+        /* cpu multi: dep, thr, mem, thr_scaling, thr_efficiency */
+        cm->dep_chain_ips / 1e6, cm->indep_throughput_ips / 1e6,
+        cm->memory_bound_ips / 1e6, cm->thr_scaling, cm->thr_efficiency_percent,
         mem->sequential_write_gbps, mem->sequential_read_gbps,
         mem->memcpy_gbps, mem->latency_ns);
 

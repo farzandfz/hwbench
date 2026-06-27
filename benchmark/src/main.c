@@ -159,29 +159,42 @@ static void print_kv_dbl(const char *key, double val, const char *unit,
 }
 
 /* ---- module-specific print helpers ---- */
-static void print_cpu_single(const CpuSingleResult *r, bool nc) {
+static void print_cpu_ips_row(const char *label, double ips, const char *note,
+                              bool nc) {
     char tmp[64];
-    fmt_commas(tmp, sizeof(tmp), r->iterations);
-    print_kv("Total iterations",     tmp, nc);
-    fmt_commas(tmp, sizeof(tmp), (uint64_t)r->iterations_per_sec);
-    print_kv("Iterations/sec",       tmp, nc);
+    const char *cy = nc ? "" : COL_CYAN;
+    const char *rs = nc ? "" : COL_RESET;
+    fmt_commas(tmp, sizeof(tmp), (uint64_t)ips);
+    printf("  %-20s: %s%18s%s iter/s  (%s)\n", label, cy, tmp, rs, note);
+}
+
+static void print_cpu_single(const CpuSingleResult *r, bool nc) {
+    print_cpu_ips_row("Dependent chain",   r->dep_chain_ips,
+                      "latency-bound, critical path", nc);
+    print_cpu_ips_row("Indep. throughput", r->indep_throughput_ips,
+                      "throughput-bound, OOO width", nc);
+    print_cpu_ips_row("Memory bound",      r->memory_bound_ips,
+                      "L2-pressure, realistic", nc);
+    char tmp[32];
     snprintf(tmp, sizeof(tmp), "%.3f s", r->duration_sec);
-    print_kv("Duration",             tmp, nc);
-    print_kv("Note", "Register-only, no memory latency", nc);
+    print_kv("Duration (per sub-test)", tmp, nc);
 }
 
 static void print_cpu_multi(const CpuMultiResult *r, bool nc) {
+    print_cpu_ips_row("Dependent chain",   r->dep_chain_ips,
+                      "latency-bound, critical path", nc);
+    print_cpu_ips_row("Indep. throughput", r->indep_throughput_ips,
+                      "throughput-bound, OOO width", nc);
+    print_cpu_ips_row("Memory bound",      r->memory_bound_ips,
+                      "L2-pressure, realistic", nc);
     char tmp[64];
-    fmt_commas(tmp, sizeof(tmp), r->total_iterations);
-    print_kv("Total iterations",     tmp, nc);
-    fmt_commas(tmp, sizeof(tmp), (uint64_t)r->iterations_per_sec);
-    print_kv("Iterations/sec",       tmp, nc);
     snprintf(tmp, sizeof(tmp), "%d", r->threads_used);
-    print_kv("Threads",              tmp, nc);
-    snprintf(tmp, sizeof(tmp), "%.2fx", r->scaling_factor);
-    print_kv("Scaling factor",       tmp, nc);
-    snprintf(tmp, sizeof(tmp), "%.1f%%", r->efficiency_percent);
-    print_kv("Efficiency",           tmp, nc);
+    print_kv("Threads",                tmp, nc);
+    snprintf(tmp, sizeof(tmp), "%.2fx / %.2fx / %.2fx  (dep/thr/mem)",
+             r->dep_scaling, r->thr_scaling, r->mem_scaling);
+    print_kv("Scaling",                tmp, nc);
+    snprintf(tmp, sizeof(tmp), "%.1f%%", r->thr_efficiency_percent);
+    print_kv("Throughput efficiency",  tmp, nc);
 }
 
 static void print_memory(const MemoryResult *r, bool nc) {
@@ -397,8 +410,7 @@ int main(int argc, char **argv) {
         SpinnerArg sarg = {"CPU Multi", false, g_cfg.cpu_duration_sec};
         pthread_t stid;
         pthread_create(&stid, NULL, spinner_fn, &sarg);
-        g_cm = bench_cpu_multi(&g_cfg, g_sys.cpu_logical_cores,
-                               g_cs.iterations_per_sec);
+        g_cm = bench_cpu_multi(&g_cfg, g_sys.cpu_logical_cores, &g_cs);
         sarg.done = true;
         pthread_join(stid, NULL);
         print_cpu_multi(&g_cm, nc);

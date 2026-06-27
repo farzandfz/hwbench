@@ -8,23 +8,27 @@
 
 /* ---- CPU ---- */
 typedef struct {
-    uint64_t iterations;
-    double   duration_sec;
-    double   iterations_per_sec;
+    double dep_chain_ips;        /* latency-bound dependent multiply chain */
+    double indep_throughput_ips; /* throughput-bound 4 independent chains  */
+    double memory_bound_ips;     /* L2-pressure 4MB array walk             */
+    double duration_sec;         /* wall-clock per sub-benchmark           */
 } CpuSingleResult;
 
 typedef struct {
-    uint64_t total_iterations;
-    double   duration_sec;
-    double   iterations_per_sec;
-    double   scaling_factor;
-    double   efficiency_percent;
-    int      threads_used;
+    double dep_chain_ips;
+    double indep_throughput_ips;
+    double memory_bound_ips;
+    double dep_scaling;           /* multi dep_chain_ips / single dep_chain_ips */
+    double thr_scaling;           /* multi indep_thr_ips / single indep_thr_ips */
+    double mem_scaling;
+    double thr_efficiency_percent;/* thr_scaling / threads * 100 */
+    double duration_sec;
+    int    threads_used;
 } CpuMultiResult;
 
 CpuSingleResult bench_cpu_single(const BenchConfig *cfg);
 CpuMultiResult  bench_cpu_multi(const BenchConfig *cfg, int num_cores,
-                                double single_ips);
+                                const CpuSingleResult *single);
 
 /* ---- Memory ---- */
 typedef struct {

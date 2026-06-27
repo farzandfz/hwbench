@@ -66,9 +66,6 @@ static void json_dbl(SB *sb, const char *key, double val) {
     sb_printf(sb, "    \"%s\": %.6g", key, val);
 }
 
-static void json_u64(SB *sb, const char *key, uint64_t val) {
-    sb_printf(sb, "    \"%s\": %llu", key, (unsigned long long)val);
-}
 
 static void json_int(SB *sb, const char *key, int val) {
     sb_printf(sb, "    \"%s\": %d", key, val);
@@ -136,20 +133,23 @@ void write_json(const char *path,
 
     /* cpu_single */
     sb_append (&sb, "    \"cpu_single\": {\n");
-    json_u64  (&sb, "iterations",        cs->iterations); COMMA(&sb);
-    json_dbl  (&sb, "duration_sec",      cs->duration_sec); COMMA(&sb);
-    json_dbl  (&sb, "iterations_per_sec",cs->iterations_per_sec); COMMA(&sb);
-    json_str  (&sb, "note", "Register-only workload. No memory latency.");
+    json_dbl  (&sb, "dependent_chain_ips",      cs->dep_chain_ips);        COMMA(&sb);
+    json_dbl  (&sb, "independent_throughput_ips",cs->indep_throughput_ips); COMMA(&sb);
+    json_dbl  (&sb, "memory_bound_ips",         cs->memory_bound_ips);     COMMA(&sb);
+    json_dbl  (&sb, "duration_sec",             cs->duration_sec);
     sb_append (&sb, "\n    },\n");
 
     /* cpu_multi */
     sb_append (&sb, "    \"cpu_multi\": {\n");
-    json_u64  (&sb, "total_iterations",   cm->total_iterations); COMMA(&sb);
-    json_dbl  (&sb, "duration_sec",       cm->duration_sec); COMMA(&sb);
-    json_dbl  (&sb, "iterations_per_sec", cm->iterations_per_sec); COMMA(&sb);
-    json_dbl  (&sb, "scaling_factor",     cm->scaling_factor); COMMA(&sb);
-    json_dbl  (&sb, "efficiency_percent", cm->efficiency_percent); COMMA(&sb);
-    json_int  (&sb, "threads_used",       cm->threads_used);
+    json_dbl  (&sb, "dependent_chain_ips",       cm->dep_chain_ips);        COMMA(&sb);
+    json_dbl  (&sb, "independent_throughput_ips", cm->indep_throughput_ips); COMMA(&sb);
+    json_dbl  (&sb, "memory_bound_ips",          cm->memory_bound_ips);     COMMA(&sb);
+    json_dbl  (&sb, "dep_scaling",               cm->dep_scaling);           COMMA(&sb);
+    json_dbl  (&sb, "thr_scaling",               cm->thr_scaling);           COMMA(&sb);
+    json_dbl  (&sb, "mem_scaling",               cm->mem_scaling);           COMMA(&sb);
+    json_dbl  (&sb, "thr_efficiency_percent",    cm->thr_efficiency_percent); COMMA(&sb);
+    json_dbl  (&sb, "duration_sec",              cm->duration_sec);           COMMA(&sb);
+    json_int  (&sb, "threads_used",              cm->threads_used);
     sb_append (&sb, "\n    },\n");
 
     /* memory */
