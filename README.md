@@ -5,7 +5,7 @@ A self-contained benchmark that runs on Linux x86_64, Linux aarch64, macOS (Inte
 ## Quick Start
 
 ```bash
-git clone https://github.com/yourname/hwbench
+git clone https://github.com/farzandfz/hwbench
 cd hwbench
 bash run.sh
 ```
