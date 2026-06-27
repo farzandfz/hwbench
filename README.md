@@ -95,19 +95,27 @@ Appended to `results/benchmark_results.csv`. Headers written automatically on fi
 
 ## Relay Server
 
-The `server/` directory contains a FastAPI server that accepts `POST /submit` with the JSON result body and uploads to Google Drive.
-
-See [server/README_DEPLOY.md](server/README_DEPLOY.md) for full deployment instructions on Railway and Render (both have free tiers).
+The `server/` directory contains a FastAPI server that accepts `POST /submit` and appends a row to a Google Sheet leaderboard. No Drive quota issues — service accounts can write to Sheets freely.
 
 After deploying, update the `RELAY_URL` variable at the top of `run.sh`.
+
+### Required environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_SERVICE_ACCOUNT_JSON_CONTENT` | Full contents of the service account JSON key file (single line) |
+| `GSHEET_ID` | Google Sheet ID (from the URL: `/spreadsheets/d/<ID>/edit`) |
+| `GSHEET_TAB` | Tab name within the sheet (e.g. `hwbench`) |
+
+The service account email must be shared on the sheet as **Editor**.
 
 ### Server endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET`  | `/health` | Health check |
-| `POST` | `/submit` | Upload a benchmark result JSON |
-| `GET`  | `/results` | List submitted results |
+| `GET`  | `/health` | Health check — shows which env vars are configured |
+| `POST` | `/submit` | Append a benchmark result row to the leaderboard |
+| `GET`  | `/results` | Return all leaderboard rows as JSON |
 
 ### Local server test
 
