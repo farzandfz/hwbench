@@ -31,6 +31,18 @@ def _get_drive_service():
     """Build and return a Google Drive service client, or None if not configured."""
     if not GDRIVE_AVAILABLE:
         return None
+    
+    # Try env var content first (for Railway / cloud deployments)
+    creds_content = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON_CONTENT")
+    if creds_content:
+        creds_info = json.loads(creds_content)
+        creds = service_account.Credentials.from_service_account_info(
+            creds_info,
+            scopes=["https://www.googleapis.com/auth/drive.file"],
+        )
+        return build("drive", "v3", credentials=creds, cache_discovery=False)
+    
+    # Fall back to file path (for local development)
     key_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
     if not key_path or not Path(key_path).exists():
         return None
@@ -62,7 +74,18 @@ def _upload_to_drive(service, folder_id: str, filename: str, content: bytes) -> 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": VERSION}
+    folder_id = os.environ.get("GDRIVE_FOLDER_ID", "")
+    has_creds = bool(
+        os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON_CONTENT")
+        or os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+    )
+    return {
+        "status": "ok",
+        "version": VERSION,
+        "gdrive_available": GDRIVE_AVAILABLE,
+        "gdrive_folder_configured": bool(folder_id),
+        "gdrive_creds_configured": has_creds,
+    }
 
 
 @app.post("/submit")
@@ -101,9 +124,14 @@ async def submit(request: Request):
             if service:
                 file_id = _upload_to_drive(service, folder_id, filename, content)
                 gdrive_ok = True
+            else:
+                print(f"GDrive upload skipped: service=None (gdrive_available={GDRIVE_AVAILABLE}, "
+                      f"has_content_env={bool(os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON_CONTENT'))}, "
+                      f"has_file_env={bool(os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON'))})")
         except Exception as exc:
-            # Log but don't fail the request — local save already succeeded
             print(f"GDrive upload failed: {exc}")
+    else:
+        print("GDrive upload skipped: GDRIVE_FOLDER_ID not set")
 
     return JSONResponse({
         "status": "ok",
