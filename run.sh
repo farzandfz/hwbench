@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-RELAY_URL="https://hwbench-relay.example.com/submit"
+RELAY_URL="https://hwbench-relay-server-production.up.railway.app/submit"
 HWBENCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$HWBENCH_DIR/benchmark/build"
 RESULTS_DIR="$HWBENCH_DIR/results"
@@ -273,12 +273,15 @@ if [ -n "$RESULT_JSON" ]; then
         if command -v curl &>/dev/null; then
             info "Uploading to $RELAY_URL ..."
             HTTP_CODE=$(curl -s -o /tmp/hwbench_upload_resp.json -w "%{http_code}" \
+                --connect-timeout 15 --max-time 30 \
                 -X POST "$RELAY_URL" \
                 -H "Content-Type: application/json" \
-                -d "@$RESULT_JSON")
+                -d "@$RESULT_JSON" 2>/tmp/hwbench_upload_err.txt) || true
             if [ "$HTTP_CODE" = "200" ]; then
                 ok "Upload successful"
                 cat /tmp/hwbench_upload_resp.json 2>/dev/null && printf "\n"
+            elif [ -z "$HTTP_CODE" ]; then
+                warn "Upload failed (connection error): $(cat /tmp/hwbench_upload_err.txt 2>/dev/null || echo 'unknown'). Results are still saved locally."
             else
                 warn "Upload failed (HTTP $HTTP_CODE). Results are still saved locally."
             fi
