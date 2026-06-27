@@ -18,8 +18,8 @@ That's it. `run.sh` auto-installs dependencies (cmake, gcc/clang, python3) and b
 
 | # | Module | Description | Key Metrics |
 |---|--------|-------------|-------------|
-| 1 | **CPU Single-Core** | Register-only integer workload (XOR, multiply, shift). No memory access. | iterations/sec |
-| 2 | **CPU Multi-Core** | Same workload on all logical cores via pthreads. | total iters/sec, scaling factor, efficiency % |
+| 1 | **CPU Single-Core** | Three sub-benchmarks: (1) latency-bound dependent XOR/multiply chain, (2) throughput-bound 4 independent MADD chains, (3) memory-bound 4 MB array walk (L2 pressure). | iter/s per sub-test |
+| 2 | **CPU Multi-Core** | Same three sub-benchmarks on all logical cores via pthreads. | iter/s, scaling factor per sub-test, efficiency % |
 | 3 | **Memory** | Sequential read/write, memcpy throughput, pointer-chasing latency. | GB/s, latency ns |
 | 4 | **Storage** | Sequential read/write (512 MB), random 4K I/O, file creation rate. | MB/s, IOPS, files/sec |
 | 5 | **Compression** | Inline LZ77 compress + decompress on 16 MB deterministic block. | MB/s, compression ratio |
@@ -36,7 +36,8 @@ That's it. `run.sh` auto-installs dependencies (cmake, gcc/clang, python3) and b
 ```
 hwbench <device_name> [options]
 
-  --duration N        Seconds per module (default: 10)
+  --duration N        Seconds per non-CPU module (default: 10)
+  --cpu-duration N    Seconds for CPU modules total (default: 30; split evenly across 3 sub-tests)
   --storage-path PATH Override path for storage benchmark (default: /tmp)
   --csv               Append a CSV row to results/benchmark_results.csv
   --skip MODULE       Skip a module by name:
@@ -72,8 +73,8 @@ Each run produces `results/benchmark_results_YYYY-MM-DDTHH-MM-SS.json`:
     ...
   },
   "results": {
-    "cpu_single":    { "iterations_per_sec": 847234100, ... },
-    "cpu_multi":     { "scaling_factor": 3.91, "efficiency_percent": 97.8, ... },
+    "cpu_single":    { "dependent_chain_ips": 612e6, "independent_throughput_ips": 847e6, "memory_bound_ips": 198e6, ... },
+    "cpu_multi":     { "dep_scaling": 3.9, "thr_scaling": 3.85, "mem_scaling": 2.1, "thr_efficiency_percent": 96.2, ... },
     "memory":        { "sequential_write_gbps": 7.4, "latency_ns": 94.3, ... },
     "storage":       { "sequential_write_mbps": 410, "random_4k_write_iops": 8200, ... },
     "compression":   { "compress_mbps": 42.1, "decompress_mbps": 280.5, ... },
